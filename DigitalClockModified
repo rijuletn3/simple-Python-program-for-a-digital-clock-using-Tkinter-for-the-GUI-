@@ -1,0 +1,214 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+import sqlite3
+from datetime import datetime
+import pytz
+import pygame
+import time
+
+class DigitalClockApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Modified Digital Clock")
+        self.root.geometry("500x600")
+
+        # Initialize Pygame for sound
+        pygame.mixer.init()
+
+        # Initialize SQLite database
+        self.conn = sqlite3.connect("alarms.db")
+        self.create_table()
+
+        # Timezone
+        self.timezone = pytz.timezone("Asia/Riyadh")  # UTC+03:00
+
+        # GUI Elements
+        self.theme = "dark"
+        self.root.configure(bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF")
+
+        # Time display
+        self.time_var = tk.StringVar(value="00:00:00")
+        tk.Label(root, textvariable=self.time_var, font=("Arial", 40, "bold"), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack(pady=10)
+
+        # Date display
+        self.date_var = tk.StringVar(value="YYYY-MM-DD")
+        tk.Label(root, textvariable=self.date_var, font=("Arial", 20), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack(pady=5)
+
+        # Theme selection
+        tk.Label(root, text="Select Theme:", font=("Arial", 12), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack()
+        self.theme_var = tk.StringVar(value="Dark")
+        ttk.Combobox(root, textvariable=self.theme_var, values=["Dark", "Light"], state="readonly", command=self.update_theme).pack()
+
+        # Alarm input
+        tk.Label(root, text="Set Alarm (HH:MM):", font=("Arial", 12), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack(pady=5)
+        self.alarm_time_entry = tk.Entry(root, font=("Arial", 12))
+        self.alarm_time_entry.pack(pady=5)
+        tk.Label(root, text="Alarm Message:", font=("Arial", 12), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack()
+        self.alarm_message_entry = tk.Entry(root, font=("Arial", 12))
+        self.alarm_message_entry.pack(pady=5)
+        tk.Button(root, text="Set Alarm", command=self.set_alarm, font=("Arial", 12)).pack(pady=5)
+        tk.Button(root, text="View Alarms", command=self.view_alarms, font=("Arial", 12)).pack(pady=5)
+
+        # Stopwatch
+        tk.Label(root, text="Stopwatch:", font=("Arial", 12), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack(pady=5)
+        self.stopwatch_var = tk.StringVar(value="00:00:00.0")
+        tk.Label(root, textvariable=self.stopwatch_var, font=("Arial", 16), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack()
+        tk.Button(root, text="Start/Stop Stopwatch", command=self.toggle_stopwatch, font=("Arial", 12)).pack(pady=5)
+        tk.Button(root, text="Reset Stopwatch", command=self.reset_stopwatch, font=("Arial", 12)).pack(pady=5)
+
+        # Timer
+        tk.Label(root, text="Timer (seconds):", font=("Arial", 12), fg="white" if self.theme == "dark" else "black", bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF").pack()
+        self.timer_entry = tk.Entry(root, font=("Arial", 12))
+        self.timer_entry.pack(pady=5)
+        tk.Button(root, text="Start Timer", command=self.start_timer, font=("Arial", 12)).pack(pady=5)
+
+        # Stopwatch variables
+        self.stopwatch_running = False
+        self.stopwatch_start = 0
+        self.stopwatch_elapsed = 0
+
+        # Timer variables
+        self.timer_running = False
+        self.timer_seconds = 0
+
+        # Start updating time
+        self.update_time()
+
+    def create_table(self):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS alarms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                time TEXT NOT NULL,
+                message TEXT NOT NULL
+            )
+        ''')
+        self.conn.commit()
+
+    def update_time(self):
+        current_time = datetime.now(self.timezone)
+        self.time_var.set(current_time.strftime("%H:%M:%S"))
+        self.date_var.set(current_time.strftime("%Y-%m-%d"))
+        self.check_alarms()
+        if self.stopwatch_running:
+            elapsed = time.time() - self.stopwatch_start + self.stopwatch_elapsed
+            self.stopwatch_var.set(f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{elapsed % 60:04.1f}")
+        if self.timer_running and self.timer_seconds > 0:
+            self.timer_seconds -= 1
+            self.time_var.set(f"Timer: {self.timer_seconds}")
+            if self.timer_seconds <= 0:
+                self.timer_running = False
+                self.visual_feedback(success=True)
+                self.play_sound()
+                messagebox.showinfo("Timer", "Timer finished!")
+                self.update_time()
+        self.root.after(1000, self.update_time)
+
+    def visual_feedback(self, success=True):
+        color = "green" if success else "red"
+        for _ in range(3):
+            self.time_var.set("ALARM!" if success else "ERROR!")
+            self.root.configure(bg=color)
+            self.root.update()
+            self.root.after(100)
+            self.root.configure(bg="#2C2C2C" if self.theme == "dark" else "#FFFFFF")
+            self.root.update()
+            self.root.after(100)
+
+    def play_sound(self):
+        try:
+            pygame.mixer.Sound("alarm.wav").play()
+        except:
+            pass  # Skip sound if file not found
+
+    def update_theme(self, *args):
+        self.theme = self.theme_var.get().lower()
+        bg_color = "#2C2C2C" if self.theme == "dark" else "#FFFFFF"
+        fg_color = "white" if self.theme == "dark" else "black"
+        self.root.configure(bg=bg_color)
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Label):
+                widget.configure(bg=bg_color, fg=fg_color)
+
+    def set_alarm(self):
+        alarm_time = self.alarm_time_entry.get().strip()
+        message = self.alarm_message_entry.get().strip()
+        try:
+            datetime.strptime(alarm_time, "%H:%M")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid time format! Use HH:MM.")
+            self.visual_feedback(success=False)
+            return
+        if not message:
+            messagebox.showerror("Error", "Alarm message is required!")
+            self.visual_feedback(success=False)
+            return
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO alarms (time, message) VALUES (?, ?)", (alarm_time, message))
+        self.conn.commit()
+        messagebox.showinfo("Success", f"Alarm set for {alarm_time}!")
+        self.visual_feedback(success=True)
+        self.play_sound()
+        self.alarm_time_entry.delete(0, tk.END)
+        self.alarm_message_entry.delete(0, tk.END)
+
+    def check_alarms(self):
+        current_time = datetime.now(self.timezone).strftime("%H:%M")
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT time, message FROM alarms WHERE time = ?", (current_time,))
+        alarms = cursor.fetchall()
+        for alarm in alarms:
+            messagebox.showinfo("Alarm", f"Alarm: {alarm[1]}")
+            self.visual_feedback(success=True)
+            self.play_sound()
+            cursor.execute("DELETE FROM alarms WHERE time = ? AND message = ?", (alarm[0], alarm[1]))
+            self.conn.commit()
+
+    def view_alarms(self):
+        window = tk.Toplevel(self.root)
+        window.title("Alarms")
+        window.geometry("400x300")
+        tree = ttk.Treeview(window, columns=("Time", "Message"), show="headings")
+        tree.heading("Time", text="Time")
+        tree.heading("Message", text="Message")
+        tree.column("Time", width=100)
+        tree.column("Message", width=250)
+        tree.pack(fill="both", expand=True, padx=10, pady=10)
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT time, message FROM alarms")
+        for row in cursor.fetchall():
+            tree.insert("", tk.END, values=row)
+
+    def toggle_stopwatch(self):
+        if self.stopwatch_running:
+            self.stopwatch_elapsed += time.time() - self.stopwatch_start
+            self.stopwatch_running = False
+        else:
+            self.stopwatch_start = time.time()
+            self.stopwatch_running = True
+
+    def reset_stopwatch(self):
+        self.stopwatch_running = False
+        self.stopwatch_elapsed = 0
+        self.stopwatch_var.set("00:00:00.0")
+
+    def start_timer(self):
+        try:
+            seconds = int(self.timer_entry.get().strip())
+            if seconds <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Enter a valid number of seconds!")
+            self.visual_feedback(success=False)
+            return
+        self.timer_seconds = seconds
+        self.timer_running = True
+        self.timer_entry.delete(0, tk.END)
+
+    def __del__(self):
+        self.conn.close()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = DigitalClockApp(root)
+    root.mainloop()
