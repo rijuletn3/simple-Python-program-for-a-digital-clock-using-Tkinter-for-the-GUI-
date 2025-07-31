@@ -1,0 +1,8 @@
+# Place label in window
+clock_label.pack(anchor='center', pady=20)
+
+# Start the clock
+update_time()
+
+# Run the application
+root.mainloop()
