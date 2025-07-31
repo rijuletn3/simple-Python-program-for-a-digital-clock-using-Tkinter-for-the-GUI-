@@ -1,0 +1,13 @@
+# Create main window
+root = tk.Tk()
+root.title("Digital Clock")
+root.geometry("300x100")
+root.configure(bg='black')
+
+# Create and configure clock label
+clock_label = tk.Label(
+    root,
+    font=('Arial', 48),
+    foreground='green',
+    background='black'
+)
