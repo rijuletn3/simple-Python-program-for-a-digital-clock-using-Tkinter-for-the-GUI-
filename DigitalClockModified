@@ -205,10 +205,4 @@ class DigitalClockApp:
         self.timer_running = True
         self.timer_entry.delete(0, tk.END)
 
-    def __del__(self):
-        self.conn.close()
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = DigitalClockApp(root)
-    root.mainloop()
+    
