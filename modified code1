@@ -1,0 +1,12 @@
+  def start_timer(self):
+        try:
+            seconds = int(self.timer_entry.get().strip())
+            if seconds <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Enter a valid number of seconds!")
+            self.visual_feedback(success=False)
+            return
+        self.timer_seconds = seconds
+        self.timer_running = True
+        self.timer_entry.delete(0, tk.END)
