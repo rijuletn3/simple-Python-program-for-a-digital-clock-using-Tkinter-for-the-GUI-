@@ -1,0 +1,3 @@
+  self.timer_seconds = seconds
+        self.timer_running = True
+        self.timer_entry.delete(0, tk.END)
