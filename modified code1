@@ -7,6 +7,4 @@
             messagebox.showerror("Error", "Enter a valid number of seconds!")
             self.visual_feedback(success=False)
             return
-        self.timer_seconds = seconds
-        self.timer_running = True
-        self.timer_entry.delete(0, tk.END)
+      
