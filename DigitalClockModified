@@ -187,10 +187,7 @@ class DigitalClockApp:
             self.stopwatch_start = time.time()
             self.stopwatch_running = True
 
-    def reset_stopwatch(self):
-        self.stopwatch_running = False
-        self.stopwatch_elapsed = 0
-        self.stopwatch_var.set("00:00:00.0")
+  
 
   
 
