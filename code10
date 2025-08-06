@@ -1,0 +1,7 @@
+    def toggle_stopwatch(self):
+        if self.stopwatch_running:
+            self.stopwatch_elapsed += time.time() - self.stopwatch_start
+            self.stopwatch_running = False
+        else:
+            self.stopwatch_start = time.time()
+            self.stopwatch_running = True
