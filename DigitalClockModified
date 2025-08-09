@@ -6,7 +6,7 @@ import pytz
 import pygame
 import time
 
-class DigitalClockApp:
+class Digital ClockApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Modified Digital Clock")
