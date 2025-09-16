@@ -2,7 +2,7 @@ import tkinter as tk
 from time import strftime
 
 def update_time():
-    current_time = strftime('%H:%M:%S')
+    current_time = starttime('%H:%M:%S')
     clock_label.config(text=current_time)
     clock_label.after(1000, update_time)  # Update every 1000ms (1 second)
 
